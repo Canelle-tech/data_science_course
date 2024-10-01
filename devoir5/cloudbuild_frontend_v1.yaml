@@ -1,0 +1,73 @@
+steps:
+  # Tentative de tirer l'image Docker "base" avec le tag `latest` pour éviter la reconstruction si elle est déjà à jour.
+  - name: 'gcr.io/cloud-builders/docker'
+    id: 'pull-frontend-base-image'
+    entrypoint: 'bash'
+    args:
+      - '-c'
+      - |
+        docker pull northamerica-northeast1-docker.pkg.dev/my-project-canelle/my-artifacts/frontend-base:latest || exit 0
+
+  # Créez une étape qui construit l'image Docker "base"
+  # L'image Docker de base doit être étiquetée avec ${BUILD_ID} et `latest`.
+  # REMARQUE : Le "tag" complet pour une image Docker doit être REGISTRY/PROJECT_ID/REPO_NAME/IMAGE_NAME:TAG
+  # Ex. northamerica-northeast1-docker.pkg.dev/MON_PROJET/MON_NOM_IMAGE:latest
+  - name: "gcr.io/cloud-builders/docker"
+    id: build-frontend-base-image
+    args:
+      # Une liste d'arguments à fournir à la commande `docker`.
+      # Ex. appeler `docker build --tag foo:bar --tag foo:latest -f Dockerfile .` ressemblerait à
+      - build
+      - --cache-from=northamerica-northeast1-docker.pkg.dev/my-project-canelle/my-artifacts/frontend-base:latest
+      - --tag
+      - northamerica-northeast1-docker.pkg.dev/my-project-canelle/my-artifacts/frontend-base:${BUILD_ID}
+      - --tag
+      - northamerica-northeast1-docker.pkg.dev/my-project-canelle/my-artifacts/frontend-base:latest
+      - -f
+      - Dockerfile.base
+      - .
+
+  # Créez une étape qui pousse l'image Docker "base" vers le registre des artefacts
+  # avec le tag ${BUILD_ID}
+  - name: "gcr.io/cloud-builders/docker"
+    id: push-frontend-base-image-build-id
+    args:
+      # Ici, nous voudrons invoquer la commande `push`.
+      # ex. push IMAGE:TAG
+      - push
+      - northamerica-northeast1-docker.pkg.dev/my-project-canelle/my-artifacts/frontend-base:${BUILD_ID}
+
+  # Créez une étape qui pousse l'image Docker "base" vers le registre des artefacts
+  # avec le tag `latest`.
+  - name: "gcr.io/cloud-builders/docker"
+    id: push-frontend-base-image-latest
+    args:
+      # Ici, nous voudrons invoquer la commande `push`.
+      # ex. push IMAGE:TAG
+      - push
+      - northamerica-northeast1-docker.pkg.dev/my-project-canelle/my-artifacts/frontend-base:latest
+
+  # Créez une étape qui construit l'image Docker "cible" (peut être frontend ou backend)
+  - name: "gcr.io/cloud-builders/docker"
+    id: build-frontend-v1-image
+    args:
+      # Une liste d'arguments à fournir à la commande `docker`.
+      # Étiquetez l'image UNIQUEMENT avec le ${BUILD_ID}
+      - build
+      - --tag
+      - northamerica-northeast1-docker.pkg.dev/my-project-canelle/my-artifacts/frontend_v1:${BUILD_ID}
+      - --build-arg
+      - BASE_IMAGE_URI=northamerica-northeast1-docker.pkg.dev/my-project-canelle/my-artifacts/frontend-base:latest
+      - --build-arg
+      - SERVING_PORT=8080
+      - -f
+      - Dockerfile.frontend
+      - .
+
+  # Créez une étape qui pousse cette image Docker vers le registre des artefacts.
+  # Assurez-vous qu'elle ait un nom différent de l'image de base, frontend et/ou backend.
+  - name: "gcr.io/cloud-builders/docker"
+    id: push-frontend-v1-image
+    args:
+      - push
+      - northamerica-northeast1-docker.pkg.dev/my-project-canelle/my-artifacts/frontend_v1:${BUILD_ID}

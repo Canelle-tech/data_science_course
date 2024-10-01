@@ -1,0 +1,7 @@
+services:
+  v1:
+    front_end: 'https://frontend-v1-vvrdjrw4ha-nn.a.run.app' # Paste the URL of the Cloud Run service for front end V1
+    back_end: 'https://backend-v1-vvrdjrw4ha-nn.a.run.app' # Paste the URL of the Cloud Run service for back end V1
+  v2:
+    front_end: 'https://frontend-v2-vvrdjrw4ha-nn.a.run.app' # Paste the URL of the Cloud Run service for front end V2
+    back_end: 'https://backend-v2-vvrdjrw4ha-nn.a.run.app' # Paste the URL of the Cloud Run service for front end V2
